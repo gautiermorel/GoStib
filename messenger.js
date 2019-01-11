@@ -23,16 +23,14 @@ module.exports = class Messenger {
 		let messageInstancesSize = messageInstances.length;
 
 		let promises = [];
+
 		for (let i = 0; i < messageInstancesSize; i++) {
 			let instance = messageInstances[i];
-			console.log('instance=', instance);
 
 			let { id: senderId = null } = (instance && instance.sender) || {};
-			let { is_echo = false } = (instance && instance.message) || {};
+			let { is_echo = false, text = null } = (instance && instance.message) || {};
 
-			if (!is_echo) {
-				promises.push(this.sendMessage(senderId))
-			}
+			if (!is_echo && text) promises.push(this.sendMessage(senderId));
 		}
 
 		try { await Promise.all(promises) }
@@ -42,9 +40,7 @@ module.exports = class Messenger {
 	}
 
 	sendMessage(recipientId) {
-		console.log('send message')
 		return new Promise((resolve, reject) => {
-			if (recipientId !== '2195253467206298') return resolve(true);
 			request({
 				url: `${this.messenger_api_endpoint}`,
 				method: 'POST',
@@ -54,11 +50,10 @@ module.exports = class Messenger {
 				json: {
 					recipient: { id: recipientId },
 					message: {
-						text: 'Bonjour'
+						text: 'Bienvenue sur le Bot Stib de Gautier'
 					}
 				}
-			}, (error, res, body) => {
-				console.log('HELLO from res:', body);
+			}, (error) => {
 				if (error) reject(error);
 				return resolve(true);
 			});

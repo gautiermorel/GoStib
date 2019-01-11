@@ -63,7 +63,7 @@ app.get('/webhook/', async (req, res) => {
 	messenger.handleVerify(req, res)
 });
 
-app.post('/webhook/', async (req, res) => {
+app.post('/webhook/', (req, res) => {
 	messenger.receiveMessage(req, res)
 });
 
