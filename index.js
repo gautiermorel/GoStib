@@ -13,15 +13,11 @@ const { CronJob } = require('cron');
 const app = express();
 
 if (dotenv.error) console.log('WARNING: index.js - Unable to load dotenv files');
-const { CRON_PATTERN = '0 20 * * *', PORT = 8000, DARWIN_TO_SCHAERBEEK = '5063', RECIPIENT_ID = '2195253467206298' } = process.env;
+const { CRON_PATTERN = '0 20 * * *', PORT = 8000 } = process.env;
 
 const STIB = require('./stib');
-const Messenger = require('./messenger');
-const Helpers = require('./helpers');
 
 let stib = new STIB();
-let messenger = new Messenger();
-let helpers = new Helpers();
 
 app.use(compression());
 app.set('case sensitive routing', true);
@@ -88,69 +84,7 @@ const job = new CronJob({
 
 		console.log('INFO: index.js#onTick - Start:', start.toDate());
 
-		let token;
-		try { token = await stib.init() }
-		catch (error) {
-			console.log('ERROR: index.js#onTick - Cannot generate access_token from STIB:', error);
-			return false;
-		}
-
-		let { access_token = null, expires_in = null } = token || {};
-
-		if (!access_token || !expires_in) {
-			console.log('ERROR: index.js#onTick - No access_token or expirin_in found')
-			return false;
-		}
-
-		let renewToken = moment().add(expires_in, 'millisecond');
-
-		console.log('INFO: index.js#onTick - expires_in=', expires_in, '| Need to be renew at:', renewToken.toDate());
-
-		while (moment().isBefore(renewToken)) {
-
-			console.log('moment()=', moment());
-			console.log('renew=', renewToken);
-
-			setTimeout(async () => {
-				// Now checking time for DARWIN_TO_SCHAERBEEK.
-				let passingTimes;
-				try { passingTimes = await stib.getPassingTimeByPoint(access_token, DARWIN_TO_SCHAERBEEK) }
-				catch (error) {
-					console.log('ERROR: index.js#onTick - Unable to get passing time by point:', error);
-					return false;
-				}
-
-				let [nextTram, upcommingTram] = passingTimes || [];
-
-				if (!nextTram || !upcommingTram) {
-					console.log('ERROR: index.js#onTick - No available informations returned');
-					return false;
-				}
-
-				let { expectedArrivalTime = null } = nextTram;
-
-				if (!expectedArrivalTime) {
-					console.log('ERROR: index.js#onTick - No available expectedArrivalTime returned');
-					return false;
-				}
-
-				let remainingTime = helpers.getRemainingMinutes(expectedArrivalTime);
-
-				if (remainingTime < 3) {
-					console.log('INFO: we will warn Gautier that he can leave now !', remainingTime);
-					let text = `Hey, next tram is in ${remainingTime} minutes !`
-					messenger.sendMessage(RECIPIENT_ID, { text: text });
-				}
-
-				if (remainingTime > 3) {
-					console.log('INFO: no need to warn Gautier, he still has time:', remainingTime);
-					let text = `No need to worry, your next tram is in ${remainingTime} minutes !`
-					messenger.sendMessage(RECIPIENT_ID, { text: text });
-				}
-			}, 20000);
-		}
-
-		if (moment().isBefore(end)) return this.requesting();
+		stib.run(end);
 
 		console.log('INFO: index.js#onTick - End of this range, will wait till the next one');
 
