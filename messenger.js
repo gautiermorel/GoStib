@@ -35,7 +35,7 @@ module.exports = class Messenger {
 	sendMessage(to) {
 		return new Promise((resolve, reject) => {
 			request({
-				url: `${this.api_endpoint}`,
+				url: `${this.messenger_api_endpoint}`,
 				method: 'POST',
 				qs: {
 					access_token: `${this.messenger_profile_token}`
