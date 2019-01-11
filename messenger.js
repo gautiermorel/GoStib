@@ -20,13 +20,19 @@ module.exports = class Messenger {
 
 	receiveMessage(req, res) {
 		const messageInstances = req.body.entry[0].messaging;
-		messageInstances.forEach((instance) => {
+		messageInstances.forEach(async instance => {
 			console.log('instance=', instance);
+
+			let { sender: to = null } = instance;
+			if (instance && instance.message && instance.message.is_echo) return false;
+
+			try { await await this.sendMessage(to) }
+			catch (error) { console.log('ERROR: messenger.js#receiveMessage - Unable to send message:', error) }
 		});
 		res.sendStatus(200);
 	}
 
-	sendMessage() {
+	sendMessage(to) {
 		return new Promise((resolve, reject) => {
 			request({
 				url: `${this.api_endpoint}`,
@@ -35,11 +41,14 @@ module.exports = class Messenger {
 					access_token: `${this.messenger_profile_token}`
 				},
 				json: {
-					recipient: { id: receiver },
-					message: payload,
+					recipient: { id: to },
+					message: {
+						text: 'Bonjour'
+					}
 				}
-			}, (error, response, body) => {
-
+			}, (error) => {
+				if (error) reject(error);
+				return resolve(true);
 			});
 		});
 	}
