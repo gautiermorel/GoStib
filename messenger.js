@@ -39,7 +39,9 @@ module.exports = class Messenger {
 		res.sendStatus(200);
 	}
 
-	sendMessage(recipientId) {
+	sendMessage(recipientId, message) {
+		let { text = 'Bienvenue sur le Bot Stib de Gautier' } = message || {};
+
 		return new Promise((resolve, reject) => {
 			request({
 				url: `${this.messenger_api_endpoint}`,
@@ -50,7 +52,7 @@ module.exports = class Messenger {
 				json: {
 					recipient: { id: recipientId },
 					message: {
-						text: 'Bienvenue sur le Bot Stib de Gautier'
+						text: text
 					}
 				}
 			}, (error) => {
