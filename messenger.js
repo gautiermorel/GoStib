@@ -30,17 +30,13 @@ module.exports = class Messenger {
 			let { id: senderId = null } = (instance && instance.sender) || {};
 			let { is_echo = false } = (instance && instance.message) || {};
 
-			if (is_echo || senderId === '366549940841724') {
-				console.log('instance.message=', instance.message);
-				console.log('is echo');
-				return false
+			if (!is_echo) {
+				promises.push(this.sendMessage(senderId))
 			}
-
-			// promises.push(this.sendMessage(senderId))
 		}
 
-		// try { await Promise.all(promises) }
-		// catch (error) { console.log('ERROR: messenger.js#receiveMessage - Unable to send message:', error) }
+		try { await Promise.all(promises) }
+		catch (error) { console.log('ERROR: messenger.js#receiveMessage - Unable to send message:', error) }
 
 		res.sendStatus(200);
 	}
