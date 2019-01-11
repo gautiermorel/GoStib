@@ -3,21 +3,23 @@
 const request = require('request');
 const querystring = require('querystring');
 
+const { STIB_API_ENDPOINT = 'https://opendata-api.stib-mivb.be', STIB_CONSUMER_KEY = null, STIB_CONSUMER_SECRET = null } = process.env;
+
 module.exports = class STIB {
 	constructor() {
-		this.api_endpoint = 'https://opendata-api.stib-mivb.be';
-		this.consumer_key = 'zcoDSxfbS7PKWkeWUsEHgp9MGM4a';
-		this.consumer_secret = 'BD_uR9OMcV2CZKdtjERgvFvjbEYa';
+		this.stib_api_endpoint = STIB_API_ENDPOINT;
+		this.stib_consumer_key = STIB_CONSUMER_KEY;
+		this.stib_consumer_secret = STIB_CONSUMER_SECRET;
 	}
 
 	init() {
 		let formData = querystring.stringify({ grant_type: 'client_credentials' });
 		let contentLength = formData.length;
-		let credentials = Buffer.from(`${this.consumer_key}:${this.consumer_secret}`).toString('base64');
+		let credentials = Buffer.from(`${this.stib_consumer_key}:${this.stib_consumer_secret}`).toString('base64');
 
 		return new Promise((resolve, reject) => {
 			request({
-				url: `${this.api_endpoint}/token`,
+				url: `${this.stib_api_endpoint}/token`,
 				headers: {
 					'Content-Type': 'application/x-www-form-urlencoded',
 					'Content-Length': contentLength,
@@ -51,7 +53,7 @@ module.exports = class STIB {
 	getPassingTimeByPoint(access_token, point) {
 		return new Promise((resolve, reject) => {
 			request({
-				url: `${this.api_endpoint}/OperationMonitoring/3.0/PassingTimeByPoint/${point}`,
+				url: `${this.stib_api_endpoint}/OperationMonitoring/3.0/PassingTimeByPoint/${point}`,
 				method: 'GET',
 				headers: {
 					Accept: 'application/json',

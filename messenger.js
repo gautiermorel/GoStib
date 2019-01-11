@@ -2,11 +2,13 @@
 
 const request = require('request');
 
+const { MESSENGER_API_ENDPOINT = 'https://opendata-api.stib-mivb.be', MESSENGER_VERIFY_TOKEN = null, MESSENGER_PROFILE_TOKEN = null } = process.env;
+
 module.exports = class Messenger {
 	constructor() {
-		this.api_endpoint = '';
-		this.verify_token = '';
-		this.profile_token = '';
+		this.messenger_api_endpoint = MESSENGER_API_ENDPOINT;
+		this.messenger_verify_token = MESSENGER_VERIFY_TOKEN;
+		this.messenger_profile_token = MESSENGER_PROFILE_TOKEN;
 	}
 
 	handleVerify(req, res) {
@@ -19,6 +21,7 @@ module.exports = class Messenger {
 	receiveMessage(req, res) {
 		const messageInstances = req.body.entry[0].messaging;
 		messageInstances.forEach((instance) => {
+			console.log('instance=', instance);
 		});
 		res.sendStatus(200);
 	}

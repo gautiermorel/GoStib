@@ -1,4 +1,6 @@
 /* NPM modules */
+const dotenv = require('dotenv').config()
+
 const http = require('http');
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -16,6 +18,8 @@ let messenger = new Messenger();
 const port = 8000;
 
 const app = express();
+
+if (dotenv.error) console.log('WARNING: index.js - Unable to load dotenv files');
 
 app.use(compression());
 app.set('case sensitive routing', true);
