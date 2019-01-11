@@ -12,7 +12,7 @@ module.exports = class Messenger {
 	}
 
 	handleVerify(req, res) {
-		if (req.query['hub.verify_token'] === this.verify_token) {
+		if (req.query['hub.verify_token'] === this.messenger_verify_token) {
 			return res.send(req.query['hub.challenge']);
 		}
 		return res.send('Validation failed, Verify token mismatch');
@@ -32,7 +32,7 @@ module.exports = class Messenger {
 				url: `${this.api_endpoint}`,
 				method: 'POST',
 				qs: {
-					access_token: `${this.profile_token}`
+					access_token: `${this.messenger_profile_token}`
 				},
 				json: {
 					recipient: { id: receiver },
