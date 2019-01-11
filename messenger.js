@@ -18,22 +18,37 @@ module.exports = class Messenger {
 		return res.send('Validation failed, Verify token mismatch');
 	}
 
-	receiveMessage(req, res) {
-		const messageInstances = req.body.entry[0].messaging;
-		messageInstances.forEach(async instance => {
+	async receiveMessage(req, res) {
+		let messageInstances = req.body.entry[0].messaging;
+		let messageInstancesSize = messageInstances.length;
+
+		let promises = [];
+		for (let i = 0; i < messageInstancesSize; i++) {
+			let instance = messageInstances[i];
 			console.log('instance=', instance);
 
-			let { sender: to = null } = instance;
-			if (instance && instance.message && instance.message.is_echo) return false;
+			let { id: senderId = null } = (instance && instance.sender) || {};
+			let { is_echo = false } = (instance && instance.message) || {};
 
-			try { await await this.sendMessage(to) }
-			catch (error) { console.log('ERROR: messenger.js#receiveMessage - Unable to send message:', error) }
-		});
+			if (is_echo || senderId === '366549940841724') {
+				console.log('instance.message=', instance.message);
+				console.log('is echo');
+				return false
+			}
+
+			// promises.push(this.sendMessage(senderId))
+		}
+
+		// try { await Promise.all(promises) }
+		// catch (error) { console.log('ERROR: messenger.js#receiveMessage - Unable to send message:', error) }
+
 		res.sendStatus(200);
 	}
 
-	sendMessage(to) {
+	sendMessage(recipientId) {
+		console.log('send message')
 		return new Promise((resolve, reject) => {
+			if (recipientId !== '2195253467206298') return resolve(true);
 			request({
 				url: `${this.messenger_api_endpoint}`,
 				method: 'POST',
@@ -41,12 +56,13 @@ module.exports = class Messenger {
 					access_token: `${this.messenger_profile_token}`
 				},
 				json: {
-					recipient: { id: to },
+					recipient: { id: recipientId },
 					message: {
 						text: 'Bonjour'
 					}
 				}
-			}, (error) => {
+			}, (error, res, body) => {
+				console.log('HELLO from res:', body);
 				if (error) reject(error);
 				return resolve(true);
 			});
