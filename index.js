@@ -59,8 +59,13 @@ app.get('/', async (req, res) => {
 	`);
 });
 
-app.get('/webhook/', messenger.handleVerify);
-app.post('/webhook/', messenger.receiveMessage);
+app.get('/webhook/', async (req, res) => {
+	messenger.handleVerify(req, res)
+});
+
+app.post('/webhook/', async (req, res) => {
+	messenger.receiveMessage(req, res)
+});
 
 const httpServer = http.createServer(app);
 
