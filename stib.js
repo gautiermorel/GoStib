@@ -39,13 +39,15 @@ module.exports = class STIB {
 					return reject(response.statusCode);
 				}
 
-				let { access_token = null } = body;
+				let { access_token = null, expires_in = 0 } = body;
+
+				console.log('body=', body);
 
 				if (!access_token) {
 					console.log('ERROR: stib.js#init - Error cause no access_token');
 					return reject('NO_ACCESS_TOKEN');
 				}
-				return resolve(access_token);
+				return resolve({ access_token: access_token, expires_in: expires_in });
 			});
 		})
 	}
