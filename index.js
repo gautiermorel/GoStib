@@ -9,6 +9,11 @@ const moment = require('moment');
 
 const { CronJob } = require('cron');
 
+
+const Messenger = require('./messenger');
+
+let messenger = new Messenger();
+
 /* Custom modules */
 const app = express();
 
