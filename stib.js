@@ -17,7 +17,7 @@ module.exports = class STIB {
 		this.stib_api_endpoint = STIB_API_ENDPOINT;
 		this.stib_consumer_key = STIB_CONSUMER_KEY;
 		this.stib_consumer_secret = STIB_CONSUMER_SECRET;
-		this.stop = false;
+		this.stopProgress = false;
 		this.runInProgress = false;
 	}
 
@@ -63,7 +63,7 @@ module.exports = class STIB {
 
 	async run(end, _token) {
 		console.log('INFO: stib.js#run');
-		this.stop = true;
+		this.stopProgress = false;
 		if (this.runInProgress) {
 			console.log('INFO: stib.js#run - Already a run in progress');
 			let info = 'Un scan est déjà en cours';
@@ -121,7 +121,11 @@ module.exports = class STIB {
 			return true;
 		}
 
-		if (moment().isBefore(end) && !this.stop) return this.run(end, token);
+		if (moment().isBefore(end) && !this.stopProgress) {
+			this.stopProgress = false;
+			this.runInProgress = false;
+			return this.run(end, token);
+		}
 
 		this.runInProgress = false;
 		return true;
@@ -213,11 +217,16 @@ module.exports = class STIB {
 		})
 	}
 
-	stop() {
-		console.log('INFO: stib.js#stop - Setting this.stop to true');
-		return new Promise(resolve => {
-			this.stop = true;
-			return resolve(true);
-		})
+	async stop() {
+		console.log('INFO: stib.js#stop - Setting this.stopProgress to true');
+		this.stopProgress = true;
+
+		let text = 'Scan is now disactivated !';
+		try { await messenger.sendMessage(RECIPIENT_ID, { text: text }); }
+		catch (error) {
+			console.log('ERROR: stib.js#stop - Unable to send messenger message:', error);
+			return false;
+		}
+		return true;
 	}
 }

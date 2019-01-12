@@ -40,8 +40,6 @@ app.post('/webhook/', async (req, res) => {
 	let start = moment();
 	let end = moment().add(30, 'minute');
 
-	console.log('INFO: index.js#webhook - Start:', start.toDate(), '| End:', end.toDate());
-
 	let messageInstances = req.body.entry[0].messaging;
 	let messageInstancesSize = messageInstances.length;
 
@@ -50,19 +48,30 @@ app.post('/webhook/', async (req, res) => {
 	for (let i = 0; i < messageInstancesSize; i++) {
 		let instance = messageInstances[i];
 
-		let { payload: postbackPayload = null } = (instance && instance.postback) || {};
 		let { id: senderId = null } = (instance && instance.sender) || {};
-		let { is_echo = false, text = null } = (instance && instance.message) || {};
+		let { is_echo = false, text = null, quick_reply = {} } = (instance && instance.message) || {};
+		let { payload: postbackPayload = null } = quick_reply;
+
+		if (postbackPayload && postbackPayload === 'POSTBACK_SCAN') {
+			stib.run(end, null);
+			break;
+		}
+		if (postbackPayload && postbackPayload === 'POSTBACK_STOP') {
+			stib.stop();
+			break;
+		}
+
+		console.log('INFO: index.js#webhook - Start:', start.toDate(), '| End:', end.toDate());
 
 		if (!is_echo && text) promises.push(messenger.sendMessage(senderId));
-		if (postbackPayload && postbackPayload === 'POSTBACK_SCAN') promises.push(stib.run(end, null))
-		if (postbackPayload && postbackPayload === 'POSTBACK_STOP') promises.push(stib.stop(end, null))
 	}
 
 	try { await Promise.all(promises) }
-	catch (error) { console.log('ERROR: messenger.js#receiveMessage - Unable to send message:', error) }
+	catch (error) {
+		console.log('ERROR: messenger.js#receiveMessage - Unable to send message:', error);
+	}
 
-	res.sendStatus(200);
+	return res.sendStatus(200);
 });
 
 const httpServer = http.createServer(app);
