@@ -63,14 +63,13 @@ module.exports = class STIB {
 	async run(end, _token) {
 		console.log('INFO: stib.js#run');
 
-		let { access_token = null, expires_in = 0 } = _token || {};
+		let { access_token = null, expires_in = 0, expire_when = moment() } = _token || {};
 
-		let renewToken = moment().add(expires_in, 'seconds');
-		console.log('INFO: stib.js#request - expires_in=', expires_in, '| Need to be renew at:', renewToken.toDate());
+		console.log('INFO: stib.js#request - expires_in=', expires_in, '| Need to be renew at:', expire_when.toDate());
 
 		let token;
 		console.log('INFO: stib.js#run - No token sent or token expired so we need to generate a new one');
-		if (!access_token || !expires_in || moment().isAfter(renewToken)) {
+		if (!access_token || !expires_in || moment().isAfter(expire_when)) {
 			console.log('INFO: stib.js#run - We will generate a new token');
 			try { token = await this.init() }
 			catch (error) {
@@ -80,21 +79,21 @@ module.exports = class STIB {
 
 			console.log('INFO: stib.js#run - Need to redefined new access_token & expires_in value');
 			access_token = (token && token.access_token) || null;
-			expires_in = (token && token.expires_in) || null;
+			expires_in = (token && token.expires_in) || 0;
+			expire_when = moment().add(expires_in, 'seconds');
 		}
 
+		console.log('INFO: stib.js#run - Reassign token with updated values');
 		token = {
 			access_token: access_token,
-			expires_in: expires_in
+			expires_in: expires_in,
+			expire_when: expire_when
 		}
 
-		if (!access_token || !expires_in) {
-			console.log('ERROR: stib.js#request - No access_token or expirin_in found')
+		if (!access_token || !expires_in || !expire_when) {
+			console.log('ERROR: stib.js#request - No access_token or expirin_in or expire_when found')
 			return false;
 		}
-
-
-		console.log('INFO: stib.js#run - token=', token);
 
 		try { await this.request(token) }
 		catch (error) {
@@ -119,25 +118,30 @@ module.exports = class STIB {
 				return reject(false);
 			}
 
-			let [nextTram, upcommingTram] = passingTimes || [];
+			let [upcommingTram, nextTram] = passingTimes || [];
 
-			if (!nextTram || !upcommingTram) {
+			if (!upcommingTram && !nextTram) {
 				console.log('ERROR: stib.js#request - No available informations returned');
 				return reject(false);
 			}
 
-			let { expectedArrivalTime = null } = nextTram;
+			let { expectedArrivalTime: expectedArrivalTimeUpcommingTram = null } = upcommingTram || {};
+			let { expectedArrivalTime: expectedArrivalTimeNextTram = null } = nextTram || {};
 
-			if (!expectedArrivalTime) {
+			console.log('INFO: stib.js#request - UpcommingTram infos:', upcommingTram);
+
+			if (!expectedArrivalTimeUpcommingTram || !expectedArrivalTimeNextTram) {
 				console.log('ERROR: stib.js#request - No available expectedArrivalTime returned');
 				return reject(false);
 			}
 
-			let remainingTime = helpers.getRemainingMinutes(expectedArrivalTime);
+			let remainingTime = helpers.getRemainingMinutes(expectedArrivalTimeUpcommingTram);
+			let remainingTimeNextTram = helpers.getRemainingMinutes(expectedArrivalTimeNextTram);
 
 			if (remainingTime < 3) {
 				console.log('INFO: we will warn Gautier that he can leave now !', remainingTime);
-				let text = `Hey, next tram is in ${remainingTime} minutes !`
+				let text = `Gautier - next tram is in ${remainingTime} minute(s) ! - The next one will arrive in ${remainingTimeNextTram} minite(s)`
+				if (remainingTime === 0) text = 'Tram is approching';
 
 				try { await messenger.sendMessage(RECIPIENT_ID, { text: text }); }
 				catch (error) {
@@ -156,9 +160,9 @@ module.exports = class STIB {
 				// }
 			}
 
-			console.log('INFO: stib.js#request - Wait 40 seconds');
+			console.log('INFO: stib.js#request - Wait 60 seconds');
 			let timeoutPromise = (timeout) => new Promise((resolve) => setTimeout(resolve, timeout));
-			await timeoutPromise(40000);
+			await timeoutPromise(60000);
 
 			return resolve(true);
 		})
