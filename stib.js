@@ -20,12 +20,11 @@ module.exports = class STIB {
 	}
 
 	init() {
+		console.log('INFO: stib.js#init');
+
 		let formData = querystring.stringify({ grant_type: 'client_credentials' });
 		let contentLength = formData.length;
 		let credentials = Buffer.from(`${this.stib_consumer_key}:${this.stib_consumer_secret}`).toString('base64');
-
-
-		console.log('INFO: stib.js#init - Credentials=', credentials);
 
 		return new Promise((resolve, reject) => {
 			request({
@@ -68,7 +67,6 @@ module.exports = class STIB {
 		console.log('INFO: stib.js#request - expires_in=', expires_in, '| Need to be renew at:', expire_when.toDate());
 
 		let token;
-		console.log('INFO: stib.js#run - No token sent or token expired so we need to generate a new one');
 		if (!access_token || !expires_in || moment().isAfter(expire_when)) {
 			console.log('INFO: stib.js#run - We will generate a new token');
 			try { token = await this.init() }
@@ -139,9 +137,9 @@ module.exports = class STIB {
 			let remainingTime = helpers.getRemainingMinutes(expectedArrivalTimeUpcommingTram);
 			let remainingTimeNextTram = helpers.getRemainingMinutes(expectedArrivalTimeNextTram);
 
-			if (remainingTime < 3) {
-				console.log('INFO: we will warn Gautier that he can leave now !', remainingTime);
-				let text = `Gautier - Upcomming tram to ${destinationName} (${lineId}) is in ${remainingTime} minute(s) ! - The next one will arrive in ${remainingTimeNextTram} minute(s)`
+			if (remainingTime <= 4) {
+				console.log('INFO: stib.js#request - Remaining time is less than 4 minutes:', remainingTime);
+				let text = `Upcomming tram to ${destinationName} (${lineId}) is in ${remainingTime} minute(s) ! - The next one will arrive in ${remainingTimeNextTram} minute(s)`
 				if (remainingTime === 0) text = `Tram to ${destinationName} (${lineId}) is now approching ! - The next one will arrive in ${remainingTimeNextTram} minute(s)`;
 
 				try { await messenger.sendMessage(RECIPIENT_ID, { text: text }); }
@@ -151,19 +149,11 @@ module.exports = class STIB {
 				}
 			}
 
-			if (remainingTime > 3) {
-				console.log('INFO: no need to warn Gautier, he still has time:', remainingTime);
-				// let text = `No need to worry, your next tram is in ${remainingTime} minutes !`
-				// try { await messenger.sendMessage(RECIPIENT_ID, { text: text }); }
-				// catch (error) {
-				// 	console.log('ERROR: stib.js#request - Unable to send messenger message when remaining time is up to 3 min:', error);
-				// 	return reject(false);
-				// }
-			}
+			if (remainingTime > 4) console.log(`INFO: stib.js#request - Upcomming tram to ${destinationName} (${lineId}) is in ${remainingTime} minute(s) !`);
 
-			console.log('INFO: stib.js#request - Wait 60 seconds');
+			console.log('INFO: stib.js#request - Wait 40 seconds');
 			let timeoutPromise = (timeout) => new Promise((resolve) => setTimeout(resolve, timeout));
-			await timeoutPromise(60000);
+			await timeoutPromise(40000);
 
 			return resolve(true);
 		})

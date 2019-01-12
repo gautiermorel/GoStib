@@ -40,7 +40,7 @@ module.exports = class Messenger {
 	}
 
 	sendMessage(recipientId, message) {
-		let { text = 'Bienvenue sur le Bot Stib de Gautier' } = message || {};
+		let { text = 'Bienvenue sur GoSTIB, le Bot messenger de Gautier !' } = message || {};
 
 		return new Promise((resolve, reject) => {
 			request({
