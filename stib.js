@@ -17,6 +17,8 @@ module.exports = class STIB {
 		this.stib_api_endpoint = STIB_API_ENDPOINT;
 		this.stib_consumer_key = STIB_CONSUMER_KEY;
 		this.stib_consumer_secret = STIB_CONSUMER_SECRET;
+		this.stop = false;
+		this.runInProgress = false;
 	}
 
 	init() {
@@ -61,6 +63,26 @@ module.exports = class STIB {
 
 	async run(end, _token) {
 		console.log('INFO: stib.js#run');
+		this.stop = true;
+		if (this.runInProgress) {
+			console.log('INFO: stib.js#run - Already a run in progress');
+			let info = 'Un scan est déjà en cours';
+			try { await messenger.sendMessage(RECIPIENT_ID, { text: info }); }
+			catch (error) {
+				console.log('ERROR: stib.js#run - Unable to send messenger message:', error);
+				return false;
+			}
+
+			return false;
+		}
+		this.runInProgress = true;
+
+		let text = 'Session scan activée !';
+		try { await messenger.sendMessage(RECIPIENT_ID, { text: text }); }
+		catch (error) {
+			console.log('ERROR: stib.js#run - Unable to send messenger message:', error);
+			return false;
+		}
 
 		let { access_token = null, expires_in = 0, expire_when = moment() } = _token || {};
 
@@ -99,7 +121,9 @@ module.exports = class STIB {
 			return true;
 		}
 
-		if (moment().isBefore(end)) return this.run(end, token);
+		if (moment().isBefore(end) && !this.stop) return this.run(end, token);
+
+		this.runInProgress = false;
 		return true;
 	}
 
@@ -186,6 +210,14 @@ module.exports = class STIB {
 
 				return resolve(passingTimes);
 			});
+		})
+	}
+
+	stop() {
+		console.log('INFO: stib.js#stop - Setting this.stop to true');
+		return new Promise(resolve => {
+			this.stop = true;
+			return resolve(true);
 		})
 	}
 }

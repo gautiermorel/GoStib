@@ -18,27 +18,6 @@ module.exports = class Messenger {
 		return res.send('Validation failed, Verify token mismatch');
 	}
 
-	async receiveMessage(req, res) {
-		let messageInstances = req.body.entry[0].messaging;
-		let messageInstancesSize = messageInstances.length;
-
-		let promises = [];
-
-		for (let i = 0; i < messageInstancesSize; i++) {
-			let instance = messageInstances[i];
-
-			let { id: senderId = null } = (instance && instance.sender) || {};
-			let { is_echo = false, text = null } = (instance && instance.message) || {};
-
-			if (!is_echo && text) promises.push(this.sendMessage(senderId));
-		}
-
-		try { await Promise.all(promises) }
-		catch (error) { console.log('ERROR: messenger.js#receiveMessage - Unable to send message:', error) }
-
-		res.sendStatus(200);
-	}
-
 	sendMessage(recipientId, message) {
 		let { text = 'Bienvenue sur GoSTIB, le Bot messenger de Gautier !' } = message || {};
 
@@ -52,7 +31,19 @@ module.exports = class Messenger {
 				json: {
 					recipient: { id: recipientId },
 					message: {
-						text: text
+						text: text,
+						quick_replies: [
+							{
+								content_type: 'text',
+								title: 'STOP',
+								payload: 'POSTBACK_STOP'
+							},
+							{
+								content_type: 'text',
+								title: 'SCAN',
+								payload: 'POSTBACK_SCAN'
+							}
+						]
 					}
 				}
 			}, (error) => {
