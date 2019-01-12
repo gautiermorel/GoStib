@@ -125,8 +125,9 @@ module.exports = class STIB {
 				return reject(false);
 			}
 
-			let { expectedArrivalTime: expectedArrivalTimeUpcommingTram = null } = upcommingTram || {};
+			let { expectedArrivalTime: expectedArrivalTimeUpcommingTram = null, destination = {}, lineId = 0 } = upcommingTram || {};
 			let { expectedArrivalTime: expectedArrivalTimeNextTram = null } = nextTram || {};
+			let { fr: destinationName = '' } = destination;
 
 			console.log('INFO: stib.js#request - UpcommingTram infos:', upcommingTram);
 
@@ -140,8 +141,8 @@ module.exports = class STIB {
 
 			if (remainingTime < 3) {
 				console.log('INFO: we will warn Gautier that he can leave now !', remainingTime);
-				let text = `Gautier - next tram is in ${remainingTime} minute(s) ! - The next one will arrive in ${remainingTimeNextTram} minite(s)`
-				if (remainingTime === 0) text = 'Tram is approching';
+				let text = `Gautier - Upcomming tram to ${destinationName} (${lineId}) is in ${remainingTime} minute(s) ! - The next one will arrive in ${remainingTimeNextTram} minute(s)`
+				if (remainingTime === 0) text = `Tram to ${destinationName} (${lineId}) is now approching ! - The next one will arrive in ${remainingTimeNextTram} minute(s)`;
 
 				try { await messenger.sendMessage(RECIPIENT_ID, { text: text }); }
 				catch (error) {
