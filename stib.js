@@ -148,13 +148,12 @@ module.exports = class STIB {
 
 			if (remainingTime > 3) {
 				console.log('INFO: no need to warn Gautier, he still has time:', remainingTime);
-				let text = `No need to worry, your next tram is in ${remainingTime} minutes !`
-
-				try { await messenger.sendMessage(RECIPIENT_ID, { text: text }); }
-				catch (error) {
-					console.log('ERROR: stib.js#request - Unable to send messenger message when remaining time is up to 3 min:', error);
-					return reject(false);
-				}
+				// let text = `No need to worry, your next tram is in ${remainingTime} minutes !`
+				// try { await messenger.sendMessage(RECIPIENT_ID, { text: text }); }
+				// catch (error) {
+				// 	console.log('ERROR: stib.js#request - Unable to send messenger message when remaining time is up to 3 min:', error);
+				// 	return reject(false);
+				// }
 			}
 
 			console.log('INFO: stib.js#request - Wait 40 seconds');
