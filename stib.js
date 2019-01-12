@@ -24,6 +24,9 @@ module.exports = class STIB {
 		let contentLength = formData.length;
 		let credentials = Buffer.from(`${this.stib_consumer_key}:${this.stib_consumer_secret}`).toString('base64');
 
+
+		console.log('INFO: stib.js#init - Credentials=', credentials);
+
 		return new Promise((resolve, reject) => {
 			request({
 				url: `${this.stib_api_endpoint}/token`,
@@ -48,8 +51,6 @@ module.exports = class STIB {
 
 				let { access_token = null, expires_in = 0 } = body;
 
-				console.log('body=', body);
-
 				if (!access_token) {
 					console.log('ERROR: stib.js#init - Error cause no access_token');
 					return reject('NO_ACCESS_TOKEN');
@@ -59,62 +60,76 @@ module.exports = class STIB {
 		})
 	}
 
-	async run(end) {
+	async run(end, _token) {
 		console.log('INFO: stib.js#run');
 
-		try { await this.request() }
+		let { access_token = null, expires_in = 0 } = _token || {};
+
+		let renewToken = moment().add(expires_in, 'seconds');
+		console.log('INFO: stib.js#request - expires_in=', expires_in, '| Need to be renew at:', renewToken.toDate());
+
+		let token;
+		console.log('INFO: stib.js#run - No token sent or token expired so we need to generate a new one');
+		if (!access_token || !expires_in || moment().isAfter(renewToken)) {
+			console.log('INFO: stib.js#run - We will generate a new token');
+			try { token = await this.init() }
+			catch (error) {
+				console.log('ERROR: stib.js#request - Cannot generate access_token from STIB:', error);
+				return false;
+			}
+
+			console.log('INFO: stib.js#run - Need to redefined new access_token & expires_in value');
+			access_token = (token && token.access_token) || null;
+			expires_in = (token && token.expires_in) || null;
+		}
+
+		token = {
+			access_token: access_token,
+			expires_in: expires_in
+		}
+
+		if (!access_token || !expires_in) {
+			console.log('ERROR: stib.js#request - No access_token or expirin_in found')
+			return false;
+		}
+
+
+		console.log('INFO: stib.js#run - token=', token);
+
+		try { await this.request(token) }
 		catch (error) {
 			console.log('ERROR: stib.js#run - Error while requesting stib:', error);
 			return true;
 		}
 
-		if (moment().isBefore(end)) return this.run(end);
+		if (moment().isBefore(end)) return this.run(end, token);
 		return true;
 	}
 
-	request() {
+	request(token) {
 		console.log('INFO: stib.js#request');
 		return new Promise(async (resolve, reject) => {
-			console.log('INFO: stib.js#request - Generate a token');
-			let token;
-			try { token = await this.init() }
-			catch (error) {
-				console.log('ERROR: index.js#onTick - Cannot generate access_token from STIB:', error);
-				return reject(false);
-			}
-
-			let { access_token = null, expires_in = null } = token || {};
-
-			if (!access_token || !expires_in) {
-				console.log('ERROR: index.js#onTick - No access_token or expirin_in found')
-				return reject(false);
-			}
-
-			let renewToken = moment().add(expires_in, 'millisecond');
-
-			console.log('INFO: index.js#onTick - expires_in=', expires_in, '| Need to be renew at:', renewToken.toDate());
-
-			let timeoutPromise = (timeout) => new Promise((resolve) => setTimeout(resolve, timeout));
+			let { access_token = null } = token || {};
 
 			// Now checking time for DARWIN_TO_SCHAERBEEK.
 			let passingTimes;
 			try { passingTimes = await this.getPassingTimeByPoint(access_token, DARWIN_TO_SCHAERBEEK) }
 			catch (error) {
-				console.log('ERROR: index.js#onTick - Unable to get passing time by point:', error);
+				console.log('ERROR: stib.js#request - Unable to get passing time by point:', error);
 				return reject(false);
 			}
 
 			let [nextTram, upcommingTram] = passingTimes || [];
 
 			if (!nextTram || !upcommingTram) {
-				console.log('ERROR: index.js#onTick - No available informations returned');
+				console.log('ERROR: stib.js#request - No available informations returned');
 				return reject(false);
 			}
 
 			let { expectedArrivalTime = null } = nextTram;
 
 			if (!expectedArrivalTime) {
-				console.log('ERROR: index.js#onTick - No available expectedArrivalTime returned');
+				console.log('ERROR: stib.js#request - No available expectedArrivalTime returned');
 				return reject(false);
 			}
 
@@ -142,15 +157,11 @@ module.exports = class STIB {
 				}
 			}
 
-			console.log('INFO: stib.js#request - Wait 40000ms');
+			console.log('INFO: stib.js#request - Wait 40 seconds');
+			let timeoutPromise = (timeout) => new Promise((resolve) => setTimeout(resolve, timeout));
 			await timeoutPromise(40000);
 
-			if (moment().isAfter(renewToken)) {
-				console.log('INFO: stib.js#request - Need to renew token');
-				return resolve(true);
-			}
-
-			return this.request();
+			return resolve(true);
 		})
 	}
 
@@ -166,12 +177,12 @@ module.exports = class STIB {
 				json: true
 			}, (error, response, body) => {
 				if (error) {
-					console.log('ERROR: stib.js#init - Error while requesting client token:', error);
+					console.log('ERROR: stib.js#getPassingTimeByPoint - Error while requesting client token:', error);
 					return reject(error);
 				}
 
 				if (response && response.statusCode && response.statusCode !== 200) {
-					console.log('ERROR: stib.js#init - Error but we got an code error:', response.statusCode);
+					console.log('ERROR: stib.js#getPassingTimeByPoint - Error but we got an code error:', response.statusCode);
 					return reject(response.statusCode);
 				}
 

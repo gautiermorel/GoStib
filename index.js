@@ -84,7 +84,7 @@ const job = new CronJob({
 
 		console.log('INFO: index.js#onTick - Start:', start.toDate());
 
-		stib.run(end);
+		stib.run(end, null);
 
 		console.log('INFO: index.js#onTick - End of this range, will wait till the next one');
 
