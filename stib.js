@@ -73,7 +73,9 @@ module.exports = class STIB {
 	}
 
 	request() {
+		console.log('INFO: stib.js#request');
 		return new Promise(async (resolve, reject) => {
+			console.log('INFO: stib.js#request - Generate a token');
 			let token;
 			try { token = await this.init() }
 			catch (error) {
@@ -93,8 +95,6 @@ module.exports = class STIB {
 			console.log('INFO: index.js#onTick - expires_in=', expires_in, '| Need to be renew at:', renewToken.toDate());
 
 			let timeoutPromise = (timeout) => new Promise((resolve) => setTimeout(resolve, timeout));
-
-			await timeoutPromise(60000);
 
 			// Now checking time for DARWIN_TO_SCHAERBEEK.
 			let passingTimes;
@@ -123,16 +123,32 @@ module.exports = class STIB {
 			if (remainingTime < 3) {
 				console.log('INFO: we will warn Gautier that he can leave now !', remainingTime);
 				let text = `Hey, next tram is in ${remainingTime} minutes !`
-				messenger.sendMessage(RECIPIENT_ID, { text: text });
+
+				try { await messenger.sendMessage(RECIPIENT_ID, { text: text }); }
+				catch (error) {
+					console.log('ERROR: stib.js#request - Unable to send messenger message when remaining tome is less than 3 min:', error);
+					return reject(false);
+				}
 			}
 
 			if (remainingTime > 3) {
 				console.log('INFO: no need to warn Gautier, he still has time:', remainingTime);
 				let text = `No need to worry, your next tram is in ${remainingTime} minutes !`
-				messenger.sendMessage(RECIPIENT_ID, { text: text });
+
+				try { await messenger.sendMessage(RECIPIENT_ID, { text: text }); }
+				catch (error) {
+					console.log('ERROR: stib.js#request - Unable to send messenger message when remaining time is up to 3 min:', error);
+					return reject(false);
+				}
 			}
 
-			if (moment().isAfter(renewToken)) return resolve(true);
+			console.log('INFO: stib.js#request - Wait 40000ms');
+			await timeoutPromise(40000);
+
+			if (moment().isAfter(renewToken)) {
+				console.log('INFO: stib.js#request - Need to renew token');
+				return resolve(true);
+			}
 
 			return this.request();
 		})
